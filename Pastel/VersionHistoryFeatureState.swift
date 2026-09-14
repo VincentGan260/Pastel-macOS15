@@ -1,3 +1,9 @@
+// ---------------------------------------------------------------------------
+//  Fork modification notice — full attribution in NOTICE (repo root).
+//  Community fork of Pastel-macOS (by EEliberto, Apache-2.0) for macOS 15.
+//  Modified 2026-09-14 by VincentGan260: removed macOS 26 Liquid Glass
+//  APIs; replaced with native macOS 15 SwiftUI containers/controls.
+// ---------------------------------------------------------------------------
 import Observation
 import SwiftUI
 
@@ -76,7 +82,7 @@ struct SourceProviderCapsule: View {
             Capsule()
                 .stroke(providerStroke, lineWidth: 1)
         }
-        .glassEffect(.regular.tint(providerGlassTint).interactive(), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
         .opacity(isDisabled ? 0.55 : 1)
         .allowsHitTesting(!isDisabled)
     }
@@ -236,7 +242,6 @@ struct VersionSelectionRow: View {
     let onAirDrop: () -> Void
     let onDelete: () -> Void
     @State private var isHovered = false
-    @Namespace private var actionGlassNamespace
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -289,8 +294,6 @@ struct VersionSelectionRow: View {
             .frame(width: proxy.size.width, height: 46, alignment: .leading)
         }
         .frame(maxWidth: .infinity, minHeight: 46, maxHeight: 46, alignment: .leading)
-        .background(rowFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .simultaneousGesture(TapGesture().onEnded {
             onSelect()
         })
@@ -316,7 +319,7 @@ struct VersionSelectionRow: View {
 
     @ViewBuilder
     private var actionSlot: some View {
-        GlassEffectContainer(spacing: 0) {
+        VStack(spacing: 0) {
             ZStack(alignment: .trailing) {
                 actionContent
                     .id(actionState)
@@ -338,12 +341,8 @@ struct VersionSelectionRow: View {
             )
         case .running:
             DownloadProgressPill(progress: downloadProgress, isPackaging: isPackaging)
-                .glassEffectID("version-row-action", in: actionGlassNamespace)
-                .glassEffectTransition(.matchedGeometry)
         case .downloaded:
             FileActionsBar(isSelected: isSelected, onReveal: onReveal, onAirDrop: onAirDrop, onDelete: onDelete)
-                .glassEffectID("version-row-action", in: actionGlassNamespace)
-                .glassEffectTransition(.matchedGeometry)
         case .ready:
             Button {
                 onDownload()
@@ -366,9 +365,7 @@ struct VersionSelectionRow: View {
             }
             .buttonStyle(StablePressButtonStyle())
             .foregroundStyle(Color.accentColor)
-            .glassEffect(.regular.tint(isSelected ? Color.white.opacity(0.34) : nil).interactive(), in: Capsule())
-            .glassEffectID("version-row-action", in: actionGlassNamespace)
-            .glassEffectTransition(.matchedGeometry)
+            .background(.regularMaterial, in: Capsule())
         }
     }
 
@@ -384,19 +381,6 @@ struct VersionSelectionRow: View {
         if isDownloading { return .running }
         if downloadedURL != nil { return .downloaded }
         return .ready
-    }
-
-    private var rowFill: Color {
-        if isSelected {
-            return Color(nsColor: .selectedContentBackgroundColor)
-        }
-        if isHovered {
-            return colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.055)
-        }
-        if rowIndex.isMultiple(of: 2) {
-            return colorScheme == .dark ? Color.white.opacity(0.030) : Color.black.opacity(0.022)
-        }
-        return .clear
     }
 
     private var primaryTextStyle: Color {

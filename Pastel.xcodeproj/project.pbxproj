@@ -1,4 +1,13 @@
 // !$*UTF8*$!
+
+/* ===========================================================================
+ * Fork modification notice — full attribution in NOTICE (repository root).
+ * Community fork of Pastel-macOS (by EEliberto, Apache License 2.0) adapted
+ * for macOS 15. Modified 2026-09-14 by VincentGan260: deployment target
+ * lowered from macOS 26.0 to macOS 15.0; no other project structure changed.
+ * All application logic is preserved from the original. See NOTICE for the
+ * complete list of open-source technologies used and their licenses.
+ * =========================================================================== */
 {
 	archiveVersion = 1;
 	classes = {
@@ -207,7 +216,7 @@
 				ENABLE_TESTABILITY = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -225,7 +234,7 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};

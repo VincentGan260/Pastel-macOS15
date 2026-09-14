@@ -1,0 +1,70 @@
+Pastel-macOS — macOS 15 Community Fork
+======================================
+
+This product includes software developed by third parties. All original
+copyright notices, license terms, and attribution are retained and respected.
+This is an unofficial community fork and is not affiliated with, endorsed by,
+or sponsored by the original author. The Apache License 2.0 does not grant
+any trademark rights.
+
+
+----------------------------------------------------------------------------
+ORIGINAL PROJECT
+----------------------------------------------------------------------------
+Pastel-macOS
+  Author:   EEliberto
+  Source:   https://github.com/EEliberto/Pastel-macOS
+  License:  Apache License, Version 2.0
+            http://www.apache.org/licenses/LICENSE-2.0
+
+This fork adapts Pastel-macOS to run on macOS 15 (Sequoia). The only
+functional change is lowering the deployment target from macOS 26 to macOS 15
+and replacing the macOS 26 "Liquid Glass" UI with native macOS 15 SwiftUI
+containers/controls. All application logic (StoreServices login, IPA download,
+version aggregation) is preserved exactly as in the original.
+Fork maintained/modified on 2026-09-14 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
+
+
+----------------------------------------------------------------------------
+OPEN-SOURCE TECHNOLOGIES USED
+----------------------------------------------------------------------------
+
+[Swift / macOS]
+- Sparkle — auto-update framework
+    https://github.com/sparkle-project/Sparkle
+    License: MIT
+
+[Embedded Runtime]
+- Node.js — bundled Node.js 24 LTS runtime used by the embedded App Store client
+    https://nodejs.org  ·  https://github.com/nodejs/node
+    License: Node.js License (MIT-style)
+
+[Node.js dependencies — Pastel/NodeProject (see package.json)]
+- archiver                  https://github.com/archiverjs/node-archiver              (MIT)
+- axios                     https://github.com/axios/axios                           (MIT)
+- axios-cookiejar-support   https://github.com/3846masa/axios-cookiejar-support      (MIT)
+- dotenv                    https://github.com/motdotla/dotenv                        (BSD-2-Clause)
+- fetch-cookie              https://github.com/ECOMPLETE/fetch-cookie                (MIT)
+- getmac                    https://github.com/bevry/getmac                           (MIT)
+- node-stream-zip           https://github.com/antelle/node-stream-zip                (MIT)
+- p-queue                   https://github.com/sindresorhus/p-queue                  (MIT)
+- plist                     https://github.com/plist/plist.js                         (MIT)
+- tough-cookie              https://github.com/salesforce/tough-cookie               (BSD-3-Clause)
+
+[Reference / inspiration — concepts adapted, NOT bundled code]
+- majd/ipatool              https://github.com/majd/ipatool
+- beer-psi/ipatool.ts       https://github.com/beer-psi/ipatool.ts
+- SideStore                 https://github.com/SideStore/SideStore
+- Lakr233/Asspp             https://github.com/Lakr233/Asspp
+
+License texts for the dependencies above are available in their respective
+repositories. The original Apache License 2.0 text is provided in the LICENSE
+file at the repository root.
+
+
+----------------------------------------------------------------------------
+TRADEMARK NOTICE
+----------------------------------------------------------------------------
+"Pastel" and any related marks are the property of their respective owners.
+This community fork uses the name only to describe its relationship to the
+upstream project and claims no rights in the mark.

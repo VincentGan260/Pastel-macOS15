@@ -1,3 +1,9 @@
+// ---------------------------------------------------------------------------
+//  Fork modification notice — full attribution in NOTICE (repo root).
+//  Community fork of Pastel-macOS (by EEliberto, Apache-2.0) for macOS 15.
+//  Modified 2026-09-14 by VincentGan260: removed macOS 26 Liquid Glass
+//  APIs; replaced with native macOS 15 SwiftUI containers/controls.
+// ---------------------------------------------------------------------------
 import AppKit
 import Observation
 import SwiftUI
@@ -70,8 +76,6 @@ struct AppSidebarRow: View {
     let rank: Int
     let result: AppSearchResult
     let isSelected: Bool
-    @State private var isHovered = false
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 10) {
@@ -103,19 +107,6 @@ struct AppSidebarRow: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 50)
-        .background(rowFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .onHover { isHovered = $0 }
-    }
-
-    private var rowFill: Color {
-        if isSelected {
-            return Color(nsColor: .selectedContentBackgroundColor)
-        }
-        if isHovered {
-            return colorScheme == .dark ? Color.white.opacity(0.075) : Color.black.opacity(0.045)
-        }
-        return .clear
     }
 
     private var appIcon: some View {

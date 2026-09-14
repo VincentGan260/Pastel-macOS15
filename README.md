@@ -1,3 +1,6 @@
+> [!NOTE]
+> **本仓库是 Pastel-macOS 的社区 fork，已适配 macOS 15。** 原项目由 **EEliberto** 以 [Apache 2.0](LICENSE) 许可证发布。本 fork 仅下调了部署目标（macOS 26 → 15）、移除了 macOS 26 的 Liquid Glass 界面并改用原生 macOS 15 控件，**未改动任何功能逻辑**。原作者的版权与全部贡献均被完整保留与尊重；所有使用到的开源技术已在 [NOTICE](NOTICE) 文件中逐一标注。
+
 <div align="center">
   <img src="https://github.com/user-attachments/assets/f302f5d2-730c-44d2-a2c1-63cdd75804f2" width="148" alt="Pastel App Icon">
 

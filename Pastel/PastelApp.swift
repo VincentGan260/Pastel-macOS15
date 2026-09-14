@@ -1,3 +1,9 @@
+// ---------------------------------------------------------------------------
+//  Fork modification notice — full attribution in NOTICE (repo root).
+//  Community fork of Pastel-macOS (by EEliberto, Apache-2.0) for macOS 15.
+//  Modified 2026-09-14 by VincentGan260: removed macOS 26 Liquid Glass
+//  APIs; replaced with native macOS 15 SwiftUI containers/controls.
+// ---------------------------------------------------------------------------
 import AppKit
 import Combine
 import CryptoKit
@@ -1807,16 +1813,7 @@ struct AppStoreCountry: Identifiable, Hashable {
     var id: String { code }
 
     var name: String {
-        let localized = Locale.current.localizedString(forRegionCode: code.uppercased()) ?? code.uppercased()
-        if code == "cn" {
-            switch localized {
-            case "中国大陆": return "中国"
-            case "中國大陸", "中國內地": return "中國"
-            case "Mainland China": return "China"
-            default: break
-            }
-        }
-        return localized
+        Locale.current.localizedString(forRegionCode: code.uppercased()) ?? code.uppercased()
     }
 
     static let all: [AppStoreCountry] = [
@@ -2303,40 +2300,18 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var adaptiveMainToolbar: some ToolbarContent {
-        if #available(macOS 26.1, *) {
-            ToolbarItem(placement: .principal) {
-                floatingModeBar
-            }
-            .sharedBackgroundVisibility(.hidden)
-            .visibilityPriority(.high)
-
-            ToolbarItem(placement: .primaryAction) {
-                toolbarStarButton
-            }
-            .sharedBackgroundVisibility(.hidden)
-
-            ToolbarItem(placement: .primaryAction) {
-                toolbarSettingsButton
-            }
-            .sharedBackgroundVisibility(.hidden)
-            .visibilityPriority(.high)
-        } else {
-            ToolbarItem(placement: .principal) {
-                floatingModeBar
-            }
-            .sharedBackgroundVisibility(.hidden)
-
-            ToolbarItem(placement: .primaryAction) {
-                toolbarStarButton
-            }
-            .sharedBackgroundVisibility(.hidden)
-
-            ToolbarItem(placement: .primaryAction) {
-                toolbarSettingsButton
-            }
-            .sharedBackgroundVisibility(.hidden)
+        ToolbarItem(placement: .principal) {
+            floatingModeBar
         }
-    }
+        
+        ToolbarItem(placement: .primaryAction) {
+            toolbarStarButton
+        }
+
+        ToolbarItem(placement: .primaryAction) {
+            toolbarSettingsButton
+        }
+            }
 
     private var appBackground: some View {
         Rectangle()
@@ -2352,7 +2327,7 @@ struct ContentView: View {
                 .font(.system(size: 15, weight: .regular))
                 .frame(width: 35, height: 35)
                 .contentShape(Circle())
-                .glassEffect(.regular, in: Circle())
+                .background(.regularMaterial, in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(String(localized: "设置"))
@@ -2368,7 +2343,7 @@ struct ContentView: View {
                 .foregroundStyle(.yellow)
                 .frame(width: 35, height: 35)
                 .contentShape(Circle())
-                .glassEffect(.regular, in: Circle())
+                .background(.regularMaterial, in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("GitHub Star")
@@ -2391,7 +2366,7 @@ struct ContentView: View {
     }
 
     private var floatingModeBar: some View {
-        GlassEffectContainer(spacing: 6) {
+        VStack(spacing: 6) {
             HStack(spacing: 0) {
                 ForEach(Array(RightPanelMode.allCases.enumerated()), id: \.element.id) { index, mode in
                     Button {
@@ -2446,7 +2421,7 @@ struct ContentView: View {
                 Capsule()
                     .stroke(modeBarStroke, lineWidth: 1)
             }
-            .glassEffect(.regular.tint(modeBarGlassTint), in: Capsule())
+            .background(.regularMaterial, in: Capsule())
         }
     }
 
@@ -2699,80 +2674,74 @@ struct ContentView: View {
     }
 
     private var appSidebar: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(catalog.isShowingFeatured ? String(localized: "热门 App") : String(localized: "搜索结果"))
-                        .font(.headline.weight(.semibold))
-                    Spacer()
-                    Text(String(localized: "\(catalog.searchResults.count) 条结果"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.leading, 4)
-                .padding(.trailing, 12)
-
-                if catalog.isSearching {
-                    centeredSpinner
-                        .frame(minHeight: 260)
-                } else if catalog.searchResults.isEmpty {
-                    largeEmptyState(
-                        systemImage: "magnifyingglass",
-                        title: String(localized: "暂无内容"),
-                        message: catalog.searchStatus
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 260)
-                } else {
-                    LazyVStack(spacing: 4) {
-                        ForEach(Array(catalog.searchResults.enumerated()), id: \.element.id) { index, result in
-                            Button {
-                                selectApp(result)
-                            } label: {
-                                AppSidebarRow(
-                                    rank: index + 1,
-                                    result: result,
-                                    isSelected: searchFeature.selectedApp?.id == result.id
-                                )
-                            }
-                            .buttonStyle(StablePressButtonStyle())
-                            .onAppear {
-                                catalog.loadMoreFeaturedIfNeeded(current: result)
-                            }
-                            .contextMenu {
-                                if let url = URL(string: result.trackViewUrl), !result.trackViewUrl.isEmpty {
-                                    Button(String(localized: "打开 App Store")) {
-                                        NSWorkspace.shared.open(url)
-                                    }
+        List {
+            if catalog.isSearching {
+                centeredSpinner
+                    .frame(minHeight: 260)
+            } else if catalog.searchResults.isEmpty {
+                largeEmptyState(
+                    systemImage: "magnifyingglass",
+                    title: String(localized: "暂无内容"),
+                    message: catalog.searchStatus
+                )
+                .frame(maxWidth: .infinity, minHeight: 260)
+            } else {
+                Section {
+                    ForEach(Array(catalog.searchResults.enumerated()), id: \.element.id) { index, result in
+                        AppSidebarRow(
+                            rank: index + 1,
+                            result: result,
+                            isSelected: searchFeature.selectedApp?.id == result.id
+                        )
+                        .onTapGesture { selectApp(result) }
+                        .onAppear { catalog.loadMoreFeaturedIfNeeded(current: result) }
+                        .contextMenu {
+                            if let url = URL(string: result.trackViewUrl), !result.trackViewUrl.isEmpty {
+                                Button(String(localized: "打开 App Store")) {
+                                    NSWorkspace.shared.open(url)
                                 }
                             }
                         }
-
-                        if catalog.isLoadingMoreFeatured {
-                            HStack(spacing: 8) {
-                                ProgressView()
-                                    .controlSize(.small)
-                                Text(String(localized: "正在加载更多"))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(
+                            searchFeature.selectedApp?.id == result.id
+                                ? Color(nsColor: .selectedContentBackgroundColor)
+                                : Color.clear
+                        )
                     }
+
+                    if catalog.isLoadingMoreFeatured {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text(String(localized: "正在加载更多"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                } header: {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(catalog.isShowingFeatured ? String(localized: "热门 App") : String(localized: "搜索结果"))
+                            .font(.headline.weight(.semibold))
+                        Spacer()
+                        Text(String(localized: "\(catalog.searchResults.count) 条结果"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.leading, 4)
                     .padding(.trailing, 12)
                 }
             }
-            .padding(.top, 8)
-            .padding(.horizontal, 18)
-            .padding(.bottom, 34)
         }
-        .safeAreaBar(edge: .top, spacing: 4) {
+        .listStyle(.sidebar)
+        .safeAreaInset(edge: .top) {
             sidebarSearchPanel
                 .padding(.horizontal, 18)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
         }
-        .scrollEdgeEffectStyle(.soft, for: .top)
         .contentMargins(.trailing, 0, for: .scrollIndicators)
     }
 
@@ -2785,7 +2754,7 @@ struct ContentView: View {
     }
 
     private var sidebarSearchPanel: some View {
-        GlassEffectContainer(spacing: 10) {
+        VStack(spacing: 10) {
             VStack(spacing: 10) {
                 sidebarSearchControls
                 sidebarPlatformPicker
@@ -2839,7 +2808,7 @@ struct ContentView: View {
         .frame(height: 42)
         .frame(maxWidth: .infinity)
         .contentShape(Capsule())
-        .glassEffect(.regular.tint(searchControlGlassTint).interactive(), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
         .background(searchControlFill, in: Capsule())
         .overlay {
             Capsule()
@@ -2888,7 +2857,7 @@ struct ContentView: View {
         }
         .padding(3)
         .frame(maxWidth: .infinity, minHeight: 36, maxHeight: 36)
-        .glassEffect(.regular.tint(searchControlGlassTint).interactive(), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
         .background(searchControlFill, in: Capsule())
         .overlay {
             Capsule()
@@ -2967,7 +2936,7 @@ struct ContentView: View {
                             } label: {
                                 Text(String(localized: "前往 Apple 来源获取"))
                             }
-                            .buttonStyle(.glassProminent)
+                            .buttonStyle(.borderedProminent)
                             .controlSize(.large)
                             .disabled(catalog.isLoadingVersions)
                         }
@@ -2989,7 +2958,7 @@ struct ContentView: View {
                                 } label: {
                                     Text(String(localized: "获取"))
                                 }
-                                .buttonStyle(.glassProminent)
+                                .buttonStyle(.borderedProminent)
                                 .controlSize(.large)
                                 .disabled(catalog.isLoadingVersions)
                             } else {
@@ -3005,7 +2974,7 @@ struct ContentView: View {
                                 } label: {
                                     Label(String(localized: "查询历史版本"), systemImage: "arrow.clockwise")
                                 }
-                                .buttonStyle(.glassProminent)
+                                .buttonStyle(.borderedProminent)
                                 .controlSize(.large)
                                 .disabled(catalog.isLoadingVersions)
                             }
@@ -3013,58 +2982,59 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         VStack(spacing: 0) {
-                            ScrollView {
-                                LazyVStack(alignment: .leading, spacing: 4) {
-                                    ForEach(Array(catalog.versionResults.enumerated()), id: \.element.id) { index, record in
-                                        let removesUpdates = noUpdateEnabled(for: record)
-                                        let jobID = downloadJobID(for: record, removesAppStoreUpdates: removesUpdates)
-                                        let downloadedURL = downloadedFileFor(record, removesAppStoreUpdates: removesUpdates)
-                                        VersionSelectionRow(
-                                            record: record,
-                                            rowIndex: index,
-                                            isSelected: versionFeature.selectedVersionIDs.contains(record.id),
-                                            removesAppStoreUpdates: removesUpdates,
-                                            isDownloading: downloads.isRunning(jobID),
-                                            downloadProgress: downloads.job(jobID)?.progress,
-                                            isPackaging: downloads.job(jobID)?.isPackaging ?? false,
-                                            hasError: downloads.job(jobID)?.status == .failed,
-                                            errorLog: downloads.job(jobID)?.log ?? "",
-                                            downloadedURL: downloadedURL,
-                                            appIcon: downloadedURL.flatMap { libraryFeature.versionIcons[$0.path] },
-                                            onSelect: {
-                                                handleVersionRowSelection(record)
-                                            },
-                                            onToggleNoUpdate: { enabled in
-                                                setNoUpdateEnabled(enabled, for: record)
-                                            },
-                                            onDownload: {
-                                                downloadVersion(record)
-                                            },
-                                            onSignIn: showRelogin,
-                                            onReveal: {
-                                                if let url = downloadedFileFor(record, removesAppStoreUpdates: noUpdateEnabled(for: record)) { revealInFinder(url) }
-                                            },
-                                            onAirDrop: {
-                                                if let url = downloadedFileFor(record, removesAppStoreUpdates: noUpdateEnabled(for: record)) { airDrop(url) }
-                                            },
-                                            onDelete: {
-                                                if let url = downloadedFileFor(record, removesAppStoreUpdates: noUpdateEnabled(for: record)) { deleteDownloaded(url) }
-                                            }
-                                        )
-                                        .contextMenu {
-                                            if showsBatchDownloadMenu(for: record) {
-                                                Button(String(localized: "全部下载")) {
-                                                    downloadSelectedVersions()
-                                                }
+                            List {
+                                ForEach(Array(catalog.versionResults.enumerated()), id: \.element.id) { index, record in
+                                    let removesUpdates = noUpdateEnabled(for: record)
+                                    let jobID = downloadJobID(for: record, removesAppStoreUpdates: removesUpdates)
+                                    let downloadedURL = downloadedFileFor(record, removesAppStoreUpdates: removesUpdates)
+                                    VersionSelectionRow(
+                                        record: record,
+                                        rowIndex: index,
+                                        isSelected: versionFeature.selectedVersionIDs.contains(record.id),
+                                        removesAppStoreUpdates: removesUpdates,
+                                        isDownloading: downloads.isRunning(jobID),
+                                        downloadProgress: downloads.job(jobID)?.progress,
+                                        isPackaging: downloads.job(jobID)?.isPackaging ?? false,
+                                        hasError: downloads.job(jobID)?.status == .failed,
+                                        errorLog: downloads.job(jobID)?.log ?? "",
+                                        downloadedURL: downloadedURL,
+                                        appIcon: downloadedURL.flatMap { libraryFeature.versionIcons[$0.path] },
+                                        onSelect: {
+                                            handleVersionRowSelection(record)
+                                        },
+                                        onToggleNoUpdate: { enabled in
+                                            setNoUpdateEnabled(enabled, for: record)
+                                        },
+                                        onDownload: {
+                                            downloadVersion(record)
+                                        },
+                                        onSignIn: showRelogin,
+                                        onReveal: {
+                                            if let url = downloadedFileFor(record, removesAppStoreUpdates: noUpdateEnabled(for: record)) { revealInFinder(url) }
+                                        },
+                                        onAirDrop: {
+                                            if let url = downloadedFileFor(record, removesAppStoreUpdates: noUpdateEnabled(for: record)) { airDrop(url) }
+                                        },
+                                        onDelete: {
+                                            if let url = downloadedFileFor(record, removesAppStoreUpdates: noUpdateEnabled(for: record)) { deleteDownloaded(url) }
+                                        }
+                                    )
+                                    .contextMenu {
+                                        if showsBatchDownloadMenu(for: record) {
+                                            Button(String(localized: "全部下载")) {
+                                                downloadSelectedVersions()
                                             }
                                         }
                                     }
+                                    .listRowInsets(EdgeInsets())
+                                    .listRowBackground(
+                                        versionFeature.selectedVersionIDs.contains(record.id)
+                                            ? Color(nsColor: .selectedContentBackgroundColor)
+                                            : Color.clear
+                                    )
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 4)
-                                .padding(.bottom, 18)
                             }
-                            .safeAreaBar(edge: .top, spacing: 4) {
+                            .safeAreaInset(edge: .top) {
                                 versionsHeaderBar
                             }
                             .contentMargins(.bottom, 6, for: .scrollContent)
@@ -3192,7 +3162,7 @@ struct ContentView: View {
     }
 
     private var manualActionSlot: some View {
-        GlassEffectContainer(spacing: 0) {
+        VStack(spacing: 0) {
             ZStack(alignment: .trailing) {
                 manualActionContent
                     .id(manualActionState)
@@ -3214,8 +3184,6 @@ struct ContentView: View {
             )
         case .running:
             DownloadProgressPill(progress: manualDownloadJob?.progress, isPackaging: manualDownloadJob?.isPackaging ?? false)
-                .glassEffectID("manual-download-action", in: manualActionGlassNamespace)
-                .glassEffectTransition(.matchedGeometry)
         case .downloaded:
             FileActionsBar(
                 isSelected: false,
@@ -3235,8 +3203,6 @@ struct ContentView: View {
                     }
                 }
             )
-            .glassEffectID("manual-download-action", in: manualActionGlassNamespace)
-            .glassEffectTransition(.matchedGeometry)
         case .ready:
             Button {
                 downloadManualVersionID()
@@ -3248,9 +3214,7 @@ struct ContentView: View {
             }
             .buttonStyle(StablePressButtonStyle())
             .foregroundStyle(canDownloadManualVersion ? Color.accentColor : Color.secondary)
-            .glassEffect(.regular.interactive(), in: Capsule())
-            .glassEffectID("manual-download-action", in: manualActionGlassNamespace)
-            .glassEffectTransition(.matchedGeometry)
+            .background(.regularMaterial, in: Capsule())
             .disabled(!canDownloadManualVersion)
         }
     }
@@ -3389,7 +3353,7 @@ struct ContentView: View {
     }
 
     private var appStoreSearchBar: some View {
-        GlassEffectContainer(spacing: 12) {
+        VStack(spacing: 12) {
             HStack(spacing: 12) {
                 countryMenu
 
@@ -3423,7 +3387,7 @@ struct ContentView: View {
             .padding(.horizontal, 16)
             .frame(height: 36)
             .frame(maxWidth: .infinity)
-            .glassEffect(.regular.interactive(), in: Capsule())
+            .background(.regularMaterial, in: Capsule())
             .background(Color.black.opacity(0.035), in: Capsule())
             .overlay {
                 Capsule()
@@ -3439,7 +3403,7 @@ struct ContentView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.white)
-            .glassEffect(.regular.tint(Color.accentColor).interactive(), in: Capsule())
+            .background(.regularMaterial, in: Capsule())
             .disabled(catalog.isSearching)
         }
     }
@@ -3491,7 +3455,7 @@ struct ContentView: View {
             .padding(.horizontal, 12)
             .frame(width: compactCountryMenuWidth, height: 36)
             .contentShape(Capsule())
-            .glassEffect(.regular.interactive(), in: Capsule())
+            .background(.regularMaterial, in: Capsule())
             .background(Color.black.opacity(0.035), in: Capsule())
             .overlay {
                 Capsule()
@@ -3544,7 +3508,7 @@ struct ContentView: View {
                 } label: {
                     Label(String(localized: "刷新"), systemImage: "arrow.clockwise")
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(activeAppID.isEmpty || catalog.isLoadingVersions)
             }
@@ -3567,7 +3531,7 @@ struct ContentView: View {
                     } label: {
                         Label(String(localized: "查询历史版本"), systemImage: "clock.arrow.circlepath")
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .disabled(catalog.isLoadingVersions)
                 }
@@ -3671,58 +3635,56 @@ struct ContentView: View {
     }
 
     private var downloadLibrarySidebar: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                downloadSidebarHeader
-
-                if filteredDownloadedAppGroups.isEmpty {
-                    Color.clear
-                        .frame(maxWidth: .infinity, minHeight: 260)
-                } else {
-                    LazyVStack(spacing: 4) {
-                        ForEach(filteredDownloadedAppGroups) { group in
-                            Button {
-                                handleDownloadedGroupSelection(group)
-                            } label: {
-                                DownloadedAppSidebarRow(
-                                    group: group,
-                                    icon: libraryFeature.versionIcons[group.iconPath],
-                                    isSelected: libraryFeature.selectedDownloadedGroupIDs.contains(group.id),
-                                    remoteIconCache: $searchFeature.remoteAppIcons
-                                )
+        List {
+            if filteredDownloadedAppGroups.isEmpty {
+                Color.clear
+                    .frame(maxWidth: .infinity, minHeight: 260)
+            } else {
+                Section {
+                    ForEach(filteredDownloadedAppGroups) { group in
+                        DownloadedAppSidebarRow(
+                            group: group,
+                            icon: libraryFeature.versionIcons[group.iconPath],
+                            isSelected: libraryFeature.selectedDownloadedGroupIDs.contains(group.id),
+                            remoteIconCache: $searchFeature.remoteAppIcons
+                        )
+                        .onTapGesture { handleDownloadedGroupSelection(group) }
+                        .contextMenu {
+                            Button(String(localized: "删除"), role: .destructive) {
+                                if showsBatchDeleteMenu(for: group) {
+                                    deleteSelectedDownloadedGroups()
+                                } else {
+                                    deleteDownloadedGroup(group)
+                                }
                             }
-                            .buttonStyle(StablePressButtonStyle())
-                            .contextMenu {
-                                Button(String(localized: "删除"), role: .destructive) {
-                                    if showsBatchDeleteMenu(for: group) {
-                                        deleteSelectedDownloadedGroups()
-                                    } else {
-                                        deleteDownloadedGroup(group)
-                                    }
-                                }
 
-                                Divider()
+                            Divider()
 
-                                Button(String(localized: "在搜索中查看")) {
-                                    openDownloadedGroupInSearch(group)
-                                }
+                            Button(String(localized: "在搜索中查看")) {
+                                openDownloadedGroupInSearch(group)
                             }
                         }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(
+                            libraryFeature.selectedDownloadedGroupIDs.contains(group.id)
+                                ? Color(nsColor: .selectedContentBackgroundColor)
+                                : Color.clear
+                        )
                     }
-                    .padding(.trailing, 12)
+                } header: {
+                    downloadSidebarHeader
+                        .padding(.leading, 4)
+                        .padding(.trailing, 12)
                 }
             }
-            .padding(.top, 8)
-            .padding(.horizontal, 18)
-            .padding(.bottom, 34)
         }
-        .safeAreaBar(edge: .top, spacing: 4) {
+        .listStyle(.sidebar)
+        .safeAreaInset(edge: .top) {
             downloadSidebarSearchPanel
                 .padding(.horizontal, 18)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
         }
-        .scrollEdgeEffectStyle(.soft, for: .top)
         .contentMargins(.trailing, 0, for: .scrollIndicators)
     }
 
@@ -3740,7 +3702,7 @@ struct ContentView: View {
     }
 
     private var downloadSidebarSearchPanel: some View {
-        GlassEffectContainer(spacing: 0) {
+        VStack(spacing: 0) {
             downloadSidebarSearchControls
         }
         .frame(maxWidth: .infinity)
@@ -3777,7 +3739,7 @@ struct ContentView: View {
         .frame(height: 42)
         .frame(maxWidth: .infinity)
         .contentShape(Capsule())
-        .glassEffect(.regular.tint(searchControlGlassTint).interactive(), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
         .background(searchControlFill, in: Capsule())
         .overlay {
             Capsule()
@@ -3793,40 +3755,41 @@ struct ContentView: View {
                     .zIndex(1)
 
                 VStack(spacing: 0) {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 4) {
-                            ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
-                                DownloadedVersionHistoryRow(
-                                    item: item,
-                                    icon: libraryFeature.versionIcons[item.id],
-                                    rowIndex: index,
-                                    isSelected: libraryFeature.selectedDownloadedItemIDs.contains(item.id),
-                                    remoteIconCache: $searchFeature.remoteAppIcons,
-                                    onSelect: {
-                                        handleDownloadedRowSelection(item)
-                                    },
-                                    onReveal: { revealInFinder(item.fileURL) },
-                                    onAirDrop: { airDrop(item.fileURL) },
-                                    onDelete: { deleteDownloaded(item.fileURL) }
-                                )
-                                .contextMenu {
-                                    if showsBatchDeleteMenu(for: item) {
-                                        Button(String(localized: "删除"), role: .destructive) {
-                                            deleteSelectedDownloadedItems()
-                                        }
-                                    } else {
-                                        Button(String(localized: "删除"), role: .destructive) {
-                                            deleteDownloaded(item.fileURL)
-                                        }
+                    List {
+                        ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
+                            DownloadedVersionHistoryRow(
+                                item: item,
+                                icon: libraryFeature.versionIcons[item.id],
+                                rowIndex: index,
+                                isSelected: libraryFeature.selectedDownloadedItemIDs.contains(item.id),
+                                remoteIconCache: $searchFeature.remoteAppIcons,
+                                onSelect: {
+                                    handleDownloadedRowSelection(item)
+                                },
+                                onReveal: { revealInFinder(item.fileURL) },
+                                onAirDrop: { airDrop(item.fileURL) },
+                                onDelete: { deleteDownloaded(item.fileURL) }
+                            )
+                            .contextMenu {
+                                if showsBatchDeleteMenu(for: item) {
+                                    Button(String(localized: "删除"), role: .destructive) {
+                                        deleteSelectedDownloadedItems()
+                                    }
+                                } else {
+                                    Button(String(localized: "删除"), role: .destructive) {
+                                        deleteDownloaded(item.fileURL)
                                     }
                                 }
                             }
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(
+                                libraryFeature.selectedDownloadedItemIDs.contains(item.id)
+                                    ? Color(nsColor: .selectedContentBackgroundColor)
+                                    : Color.clear
+                            )
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 4)
-                        .padding(.bottom, 18)
                     }
-                    .safeAreaBar(edge: .top, spacing: 4) {
+                    .safeAreaInset(edge: .top) {
                         downloadedVersionsHeaderBar
                     }
                     .contentMargins(.bottom, 6, for: .scrollContent)
@@ -3883,7 +3846,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(StablePressButtonStyle())
                 .foregroundStyle(.primary)
-                .glassEffect(.regular.interactive(), in: Capsule())
+                .background(.regularMaterial, in: Capsule())
             }
         }
         .padding(.horizontal, 2)
@@ -4293,10 +4256,7 @@ struct ContentView: View {
                 logView
             }
         }
-        .background {
-            Color(nsColor: .windowBackgroundColor)
-                .backgroundExtensionEffect()
-        }
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     @ViewBuilder
@@ -4309,7 +4269,7 @@ struct ContentView: View {
                 Label(String(localized: "搜索"), systemImage: "magnifyingglass")
             }
             .controlSize(.large)
-            .buttonStyle(.glass)
+            .buttonStyle(.bordered)
             .disabled(catalog.isSearching)
         case .versions:
             Button {
@@ -4318,7 +4278,7 @@ struct ContentView: View {
                 Label(String(localized: "查询"), systemImage: "clock.arrow.circlepath")
             }
             .controlSize(.large)
-            .buttonStyle(.glass)
+            .buttonStyle(.bordered)
             .disabled(catalog.isLoadingVersions)
         case .download:
             Button {
@@ -4327,7 +4287,7 @@ struct ContentView: View {
                 Label(String(localized: "开始下载"), systemImage: "play.fill")
             }
             .controlSize(.large)
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.borderedProminent)
             .disabled((selectedDownloadJobID().map { downloads.isRunning($0) } ?? false) || activeAppID.isEmpty || versionFeature.selectedVersion == nil)
         case .logs:
             Button {
@@ -4336,7 +4296,7 @@ struct ContentView: View {
                 Label(String(localized: "清空"), systemImage: "trash")
             }
             .controlSize(.large)
-            .buttonStyle(.glass)
+            .buttonStyle(.bordered)
             .disabled(activeLog.isEmpty || anyRunning)
         }
     }
@@ -5981,7 +5941,7 @@ struct FileActionsBar: View {
             FileActionButton(systemImage: "trash", tint: .red, size: 13.5, help: String(localized: "删除本地文件"), action: onDelete)
         }
         .padding(2)
-        .glassEffect(.regular, in: Capsule())
+        .background(.regularMaterial, in: Capsule())
     }
 }
 
@@ -6137,7 +6097,7 @@ struct DownloadProgressPill: View {
         }
         .frame(width: 58, height: 26)
         .clipShape(Capsule())
-        .glassEffect(.regular.tint(Color.accentColor.opacity(0.12)).interactive(), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
     }
 
     @ViewBuilder
@@ -6225,7 +6185,7 @@ private struct SidebarControlButtonStyleModifier: ViewModifier {
 private struct SidebarActionButtonStyleModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .buttonStyle(.glass)
+            .buttonStyle(.bordered)
             .controlSize(.large)
             .font(.body)
     }
@@ -6375,17 +6335,12 @@ private struct SettingsContentPane<Accessory: View, Content: View>: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                content
-            }
-            .padding(.top, 18)
-            .padding(.bottom, 24)
-            .padding(.horizontal, 20)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        Form {
+            content
         }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .scrollIndicators(.visible)
-        .scrollEdgeEffectStyle(.hard, for: .top)
         .toolbar(removing: .title)
         .toolbar { settingsToolbar }
     }
@@ -6402,7 +6357,6 @@ private struct SettingsContentPane<Accessory: View, Content: View>: View {
                     .fixedSize()
             }
         }
-        .sharedBackgroundVisibility(.hidden)
 
         if Accessory.self != EmptyView.self {
             ToolbarItem(placement: .primaryAction) {
@@ -6432,7 +6386,7 @@ private struct SettingsNavigationButtons: View {
                       action: navigation.goForward)
         }
         .frame(width: 72, height: 32)
-        .glassEffect(.regular, in: Capsule())
+        .background(.regularMaterial, in: Capsule())
     }
 
     private func navButton(systemImage: String, label: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
@@ -6457,7 +6411,6 @@ private extension SettingsContentPane where Accessory == EmptyView {
 }
 
 private struct SettingsGroupBox<Content: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
     let title: String?
     private let content: Content
 
@@ -6466,43 +6419,25 @@ private struct SettingsGroupBox<Content: View>: View {
         self.content = content()
     }
 
+    @ViewBuilder
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let title {
+        if let title {
+            Section {
+                content
+            } header: {
                 Text(title)
-                    .font(.headline)
-                    .padding(.leading, 2)
             }
-
-            VStack(spacing: 0) {
+        } else {
+            Section {
                 content
             }
-            .frame(maxWidth: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(groupFill)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(groupStroke, lineWidth: 1)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-    }
-
-    private var groupFill: Color {
-        colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.035)
-    }
-
-    private var groupStroke: Color {
-        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.035)
     }
 }
 
 private struct SettingsGroupDivider: View {
     var body: some View {
-        Divider()
-            .padding(.leading, 18)
+        EmptyView()
     }
 }
 
@@ -6526,7 +6461,7 @@ private struct SettingsAccountActionsBar: View {
                                         action: onDelete)
         }
         .padding(2.5)
-        .glassEffect(.regular.tint(isSelected ? Color.white.opacity(0.18) : Color.clear), in: Capsule())
+        .background(.regularMaterial, in: Capsule())
     }
 }
 
@@ -6605,7 +6540,7 @@ struct AccountSettingsView: View {
                             .contentShape(Circle())
                     }
                     .buttonStyle(StablePressButtonStyle())
-                    .glassEffect(.regular.interactive(), in: Circle())
+                    .background(.regularMaterial, in: Circle())
                     .accessibilityLabel(String(localized: "添加账户"))
                     .help(String(localized: "添加账户"))
 

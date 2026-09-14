@@ -1,3 +1,9 @@
+// ---------------------------------------------------------------------------
+//  Fork modification notice — full attribution in NOTICE (repo root).
+//  Community fork of Pastel-macOS (by EEliberto, Apache-2.0) for macOS 15.
+//  Modified 2026-09-14 by VincentGan260: removed macOS 26 Liquid Glass
+//  APIs; replaced with native macOS 15 SwiftUI containers/controls.
+// ---------------------------------------------------------------------------
 import Observation
 import SwiftUI
 
@@ -30,7 +36,7 @@ struct DownloadErrorIndicator: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(StablePressButtonStyle())
-            .glassEffect(.regular.tint(Color.yellow.opacity(0.18)).interactive(), in: Capsule())
+            .background(.regularMaterial, in: Capsule())
             .accessibilityLabel(String(localized: "查看下载错误"))
             .help(message)
             .popover(isPresented: $isShowingError, arrowEdge: .trailing) {
@@ -79,7 +85,7 @@ struct DownloadErrorIndicator: View {
                 }
                 .buttonStyle(StablePressButtonStyle())
                 .foregroundStyle(Color.accentColor)
-                .glassEffect(.regular.interactive(), in: Capsule())
+                .background(.regularMaterial, in: Capsule())
                 .help(message)
             }
         }
