@@ -27,9 +27,9 @@
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>SUEnableAutomaticChecks</key>
-    <true/>
+    <false/>
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/EEliberto/Pastel-macOS/main/appcast.xml</string>
+    <string></string>
     <key>SUPublicEDKey</key>
     <string>igtEvMP+w7+IDjXogB1ajorx89zR0t5BFgHw6PPcy/Y=</string>
     <key>SUVerifyUpdateBeforeExtraction</key>

@@ -9,14 +9,14 @@
   <p>搜索 App、查找历史版本，并将 IPA 轻松传输到 iPhone 或 iPad。</p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-20260831-0A84FF?style=flat-square" alt="Version 20260831">
-    <img src="https://img.shields.io/badge/macOS-26%2B-111111?style=flat-square&logo=apple" alt="macOS 26 or later">
+    <img src="https://img.shields.io/badge/version-20260907-0A84FF?style=flat-square" alt="Version 20260907">
+    <img src="https://img.shields.io/badge/macOS-15%2B-111111?style=flat-square&logo=apple" alt="macOS 15 or later">
     <img src="https://img.shields.io/badge/Apple%20Silicon-required-111111?style=flat-square&logo=apple" alt="Apple Silicon required">
     <img src="https://img.shields.io/badge/license-Apache--2.0-6B7280?style=flat-square" alt="Apache 2.0 License">
   </p>
 
   <p>
-    <a href="https://github.com/EEliberto/Pastel-macOS/releases/latest"><strong>下载最新版</strong></a>
+    <a href="https://github.com/VincentGan260/Pastel-macOS15/releases/latest"><strong>下载最新版</strong></a>
     ·
     <a href="https://github.com/EEliberto/Pastel-macOS/issues">提交问题</a>
     ·
