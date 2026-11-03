@@ -1,5 +1,5 @@
 > [!NOTE]
-> **本仓库是 Pastel-macOS 的社区 fork，已适配 macOS 15。** 原项目由 **EEliberto** 以 [Apache 2.0](LICENSE) 许可证发布。本 fork 仅下调了部署目标（macOS 26 → 15）、移除了 macOS 26 的 Liquid Glass 界面并改用原生 macOS 15 控件，**未改动任何功能逻辑**。原作者的版权与全部贡献均被完整保留与尊重；所有使用到的开源技术已在 [NOTICE](NOTICE) 文件中逐一标注。
+> **本仓库是 Pastel-macOS 的社区 fork，已适配 macOS 15。** 原项目由 **EEliberto** 以 [Apache 2.0](LICENSE) 许可证发布。本 fork 下调了部署目标（macOS 26 → 15）、移除了 macOS 26 的 Liquid Glass 界面并改用原生 macOS 15 控件，保留上游的登录与下载逻辑，并使用本仓库独立签名的更新源。原作者的版权与全部贡献均被完整保留与尊重；所有使用到的开源技术已在 [NOTICE](NOTICE) 文件中逐一标注。
 
 <div align="center">
   <br>
@@ -9,7 +9,7 @@
   <p>在 Mac 上搜索 iOS、iPadOS 或 visionOS App，浏览版本记录，并从 Apple 获取所选版本。</p>
   <br>
   <p>
-    <img src="https://img.shields.io/badge/version-20261102-0A84FF?style=flat-square" alt="Version 20261102">
+    <img src="https://img.shields.io/badge/version-20261102.1-0A84FF?style=flat-square" alt="Version 20261102.1">
     <img src="https://img.shields.io/badge/macOS-15%2B-111111?style=flat-square&logo=apple" alt="macOS 15 or later">
     <img src="https://img.shields.io/badge/Apple%20Silicon-required-111111?style=flat-square&logo=apple" alt="Apple Silicon required">
     <img src="https://img.shields.io/badge/license-Apache--2.0-6B7280?style=flat-square" alt="Apache 2.0 License">
@@ -86,13 +86,13 @@ Apple 账户密码与会话数据使用 AES-GCM 加密保存，主密钥由 macO
 
 <br>
 
-## Pastel 20261102
+## Pastel 20261102.1
 
 此更新修复下载的 IPA 安装后白屏闪退的问题，同时包含 Apple 账户登录与使用体验改进。受影响的 IPA 请使用新版重新下载并安装。
 
-[阅读完整更新日志](release-notes/20261102/release-notes.md)
+[阅读完整更新日志](release-notes/20261102.1/release-notes.md)
 
-本 fork 已同步上游 `82576f2`（20261102），保留 macOS 15 适配。自动更新保持关闭，后续更新请从本仓库 Releases 手动下载。上方截图来自上游，界面样式与本 fork 可能不同。
+本 fork 已同步上游 `82576f2`（20261102），保留 macOS 15 适配。自 20261102.1 起，软件内自动更新仅使用本仓库 GitHub Releases，并校验下游独立签名。旧版需先手动安装一次 20261102.1，此后可在“设置 → 关于”中检查更新及管理自动更新选项。上方截图来自上游，界面样式与本 fork 可能不同。
 
 <br>
 
@@ -107,7 +107,7 @@ open Pastel.xcodeproj
 
 使用 Xcode 构建并运行 `Pastel` 方案。仓库内的 `store-helper.gz` 已按 macOS 15.0 重新编译；修改 StoreHelper 源码后，使用 Go 1.26.5 或更高版本运行 `sh Scripts/BuildStoreHelper.sh` 重新生成。
 
-打包可运行 `sh Scripts/BuildAdHocDMG.sh`。本 fork 默认沿用 ad-hoc 签名，未经过 Apple 公证；如有稳定签名证书，可通过 `PASTEL_SIGNING_IDENTITY` 指定。
+打包可运行 `sh Scripts/BuildAdHocDMG.sh`。本 fork 默认沿用 ad-hoc 签名，未经过 Apple 公证；如有稳定签名证书，可通过 `PASTEL_SIGNING_IDENTITY` 指定。发布前还需运行 `Scripts/GenerateUpdateFeed.sh` 生成签名更新源，流程见 [更新发布说明](docs/FORK_UPDATES.md)。
 
 <details>
   <summary>开源项目与致谢</summary>

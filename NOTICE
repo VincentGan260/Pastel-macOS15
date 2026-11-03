@@ -22,9 +22,9 @@ and replace the macOS 26 "Liquid Glass" UI with native macOS 15 SwiftUI
 containers/controls. All application logic (StoreServices login, IPA download,
 version aggregation) is preserved exactly as in the original.
 The embedded StoreHelper is rebuilt from the upstream Go source with a macOS
-15.0 deployment target. This fork uses ad-hoc distribution signing and disables
-automatic updates.
-Fork maintained/modified on 2026-09-14 and 2026-11-03 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
+15.0 deployment target. This fork uses ad-hoc distribution signing. Automatic
+updates use the fork's own GitHub Releases and independent Sparkle signatures.
+Fork maintained/modified on 2026-09-14, 2026-11-03, and 2026-11-04 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
 
 
 ----------------------------------------------------------------------------

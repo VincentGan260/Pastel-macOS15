@@ -27,11 +27,17 @@
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>SUEnableAutomaticChecks</key>
-    <false/>
+    <true/>
     <key>SUFeedURL</key>
-    <string></string>
+    <string>https://raw.githubusercontent.com/VincentGan260/Pastel-macOS15/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>igtEvMP+w7+IDjXogB1ajorx89zR0t5BFgHw6PPcy/Y=</string>
+    <string>poqLnBGJNb8/KhCxR/EmqW81DBYpByT4BWhHAsUWC+U=</string>
+    <key>SUAutomaticallyUpdate</key>
+    <true/>
+    <key>SURequireSignedFeed</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
     <key>SUVerifyUpdateBeforeExtraction</key>
     <true/>
 </dict>

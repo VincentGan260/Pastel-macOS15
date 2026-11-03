@@ -7653,9 +7653,13 @@ final class AppUpdateManager {
     let updaterController: SPUStandardUpdaterController
 
     init() {
-        updaterController = SPUStandardUpdaterController(startingUpdater: true,
+        updaterController = SPUStandardUpdaterController(startingUpdater: false,
                                                          updaterDelegate: nil,
                                                          userDriverDelegate: nil)
+        // Older installations may have persisted an upstream feed override.
+        // Use only the fork's signed feed configured in Info.plist.
+        updaterController.updater.clearFeedURLFromUserDefaults()
+        updaterController.startUpdater()
     }
 
     var updater: SPUUpdater {
@@ -7666,11 +7670,19 @@ final class AppUpdateManager {
 @MainActor
 final class CheckForUpdatesViewModel: ObservableObject {
     @Published var canCheckForUpdates = false
+    @Published var automaticallyChecksForUpdates = false
+    @Published var automaticallyDownloadsUpdates = false
 
     init(updater: SPUUpdater) {
         updater.publisher(for: \.canCheckForUpdates)
             .receive(on: RunLoop.main)
             .assign(to: &$canCheckForUpdates)
+        updater.publisher(for: \.automaticallyChecksForUpdates)
+            .receive(on: RunLoop.main)
+            .assign(to: &$automaticallyChecksForUpdates)
+        updater.publisher(for: \.automaticallyDownloadsUpdates)
+            .receive(on: RunLoop.main)
+            .assign(to: &$automaticallyDownloadsUpdates)
     }
 }
 
@@ -7701,11 +7713,26 @@ private struct CheckForUpdatesSettingsRow: View {
     }
 
     var body: some View {
-        SettingsActionRow(title: String(localized: "检查更新"),
-                          subtitle: String(localized: "从 GitHub 检查 Pastel 新版本。"),
-                          systemImage: "arrow.clockwise",
-                          isEnabled: viewModel.canCheckForUpdates) {
-            updater.checkForUpdates()
+        VStack(spacing: 0) {
+            SettingsActionRow(title: String(localized: "检查更新"),
+                              subtitle: String(localized: "从 VincentGan260/Pastel-macOS15 的 GitHub Releases 获取更新。"),
+                              systemImage: "arrow.clockwise",
+                              isEnabled: viewModel.canCheckForUpdates) {
+                updater.checkForUpdates()
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle(String(localized: "自动检查更新"), isOn: Binding(
+                    get: { viewModel.automaticallyChecksForUpdates },
+                    set: { updater.automaticallyChecksForUpdates = $0 }
+                ))
+                Toggle(String(localized: "自动下载并安装更新"), isOn: Binding(
+                    get: { viewModel.automaticallyDownloadsUpdates },
+                    set: { updater.automaticallyDownloadsUpdates = $0 }
+                ))
+                .disabled(!viewModel.automaticallyChecksForUpdates)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
         }
     }
 }
