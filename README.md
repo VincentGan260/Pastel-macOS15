@@ -9,7 +9,7 @@
   <p>在 Mac 上搜索 iOS、iPadOS 或 visionOS App，浏览版本记录，并从 Apple 获取所选版本。</p>
   <br>
   <p>
-    <img src="https://img.shields.io/badge/version-20260929.2-0A84FF?style=flat-square" alt="Version 20260929.2">
+    <img src="https://img.shields.io/badge/version-20261102-0A84FF?style=flat-square" alt="Version 20261102">
     <img src="https://img.shields.io/badge/macOS-15%2B-111111?style=flat-square&logo=apple" alt="macOS 15 or later">
     <img src="https://img.shields.io/badge/Apple%20Silicon-required-111111?style=flat-square&logo=apple" alt="Apple Silicon required">
     <img src="https://img.shields.io/badge/license-Apache--2.0-6B7280?style=flat-square" alt="Apache 2.0 License">
@@ -17,7 +17,7 @@
   <p>
     <a href="https://github.com/VincentGan260/Pastel-macOS15/releases/latest"><strong>下载 Pastel</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="release-notes/20260929.2/release-notes.md">查看新功能</a>
+    <a href="release-notes/20261102/release-notes.md">查看新功能</a>
   </p>
   <p><sub>需要 macOS 15 或更高版本，以及搭载 Apple 芯片的 Mac。</sub></p>
   <br>
@@ -82,17 +82,17 @@ Pastel 使用 SwiftUI 构建，本 fork 使用兼容 macOS 15 的原生控件，
   <img width="640" alt="Pastel Apple 账户设置" src="https://github.com/user-attachments/assets/b40db4c9-3e27-4bd4-9f1e-82ed0ecc29a0">
 </p>
 
-Apple 账户密码安全地储存在 macOS 钥匙串中；会话数据经加密后储存。Pastel 使用 macOS StoreServices 完成登录和下载，因此需要搭载 Apple 芯片的实体 Mac；虚拟机不受支持。
+Apple 账户密码与会话数据使用 AES-GCM 加密保存，主密钥由 macOS Keychain 保护。Pastel 使用 macOS StoreServices 完成登录和下载，因此需要搭载 Apple 芯片的实体 Mac；虚拟机不受支持。
 
 <br>
 
-## Pastel 20260929.2
+## Pastel 20261102
 
-此更新修复了从 Apple 获取 App 时版本列表可能无法载入的问题，并提高了 Apple 账户重新认证的可靠性。建议所有用户安装。
+此更新修复下载的 IPA 安装后白屏闪退的问题，同时包含 Apple 账户登录与使用体验改进。受影响的 IPA 请使用新版重新下载并安装。
 
-[阅读完整更新日志](release-notes/20260929.2/release-notes.md)
+[阅读完整更新日志](release-notes/20261102/release-notes.md)
 
-本 fork 已同步上游 `7087860`（20260929.2），保留 macOS 15 适配。自动更新保持关闭，后续更新请从本仓库 Releases 手动下载。上方截图来自上游，界面样式与本 fork 可能不同。
+本 fork 已同步上游 `82576f2`（20261102），保留 macOS 15 适配。自动更新保持关闭，后续更新请从本仓库 Releases 手动下载。上方截图来自上游，界面样式与本 fork 可能不同。
 
 <br>
 
@@ -105,7 +105,9 @@ cd ..
 open Pastel.xcodeproj
 ```
 
-使用 Xcode 构建并运行 `Pastel` 方案。
+使用 Xcode 构建并运行 `Pastel` 方案。仓库内的 `store-helper.gz` 已按 macOS 15.0 重新编译；修改 StoreHelper 源码后，使用 Go 1.26.5 或更高版本运行 `sh Scripts/BuildStoreHelper.sh` 重新生成。
+
+打包可运行 `sh Scripts/BuildAdHocDMG.sh`。本 fork 默认沿用 ad-hoc 签名，未经过 Apple 公证；如有稳定签名证书，可通过 `PASTEL_SIGNING_IDENTITY` 指定。
 
 <details>
   <summary>开源项目与致谢</summary>

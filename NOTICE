@@ -17,12 +17,14 @@ Pastel-macOS
   License:  Apache License, Version 2.0
             http://www.apache.org/licenses/LICENSE-2.0
 
-This fork adapts Pastel-macOS to run on macOS 15 (Sequoia). The only
-functional change is lowering the deployment target from macOS 26 to macOS 15
-and replacing the macOS 26 "Liquid Glass" UI with native macOS 15 SwiftUI
+This fork adapts Pastel-macOS to run on macOS 15 (Sequoia). Compatibility changes lower the deployment target from macOS 26 to macOS 15
+and replace the macOS 26 "Liquid Glass" UI with native macOS 15 SwiftUI
 containers/controls. All application logic (StoreServices login, IPA download,
 version aggregation) is preserved exactly as in the original.
-Fork maintained/modified on 2026-09-14 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
+The embedded StoreHelper is rebuilt from the upstream Go source with a macOS
+15.0 deployment target. This fork uses ad-hoc distribution signing and disables
+automatic updates.
+Fork maintained/modified on 2026-09-14 and 2026-11-03 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
 
 
 ----------------------------------------------------------------------------
@@ -51,8 +53,14 @@ OPEN-SOURCE TECHNOLOGIES USED
 - plist                     https://github.com/plist/plist.js                         (MIT)
 - tough-cookie              https://github.com/salesforce/tough-cookie               (BSD-3-Clause)
 
-[Reference / inspiration — concepts adapted, NOT bundled code]
-- majd/ipatool              https://github.com/majd/ipatool
+[Go StoreHelper — bundled code]
+- Go runtime                https://go.dev/                              (BSD-3-Clause)
+- majd/ipatool              https://github.com/majd/ipatool               (MIT)
+  Copyright (c) 2021 Majd Alfhaily
+- progressbar               https://github.com/schollz/progressbar       (MIT)
+  Exact dependency versions are recorded in StoreHelper/go.mod and go.sum.
+
+[Reference / inspiration]
 - beer-psi/ipatool.ts       https://github.com/beer-psi/ipatool.ts
 - SideStore                 https://github.com/SideStore/SideStore
 - Lakr233/Asspp             https://github.com/Lakr233/Asspp
