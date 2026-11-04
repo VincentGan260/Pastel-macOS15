@@ -11,21 +11,17 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <sparkle:shortVersionString>20261102.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="plain-text"><![CDATA[# Pastel macOS 15 — 20261102.1
+            <description sparkle:format="plain-text"><![CDATA[# 20261102.1
 
-- 软件内更新改为从 VincentGan260/Pastel-macOS15 的 GitHub Releases 下载并安装。
-- 使用下游独立的 Sparkle 签名，校验更新源与安装包；更新源仅包含本 fork 的 macOS 15 构建。
-- 在“设置 → 关于”中新增自动检查更新、自动下载并安装更新开关。
-- 清理旧版本可能保存的上游更新源地址。
+- 支持在软件内下载并安装更新。
+- 可在“设置 → 关于”管理自动更新。
 
-旧版 20261102 及更早版本关闭了自动更新，需先手动安装一次本版本。安装后可使用应用内“检查更新”。
-
-继续包含上游 20261102 的 Apple 登录、双重认证与 IPA 授权修复。旧版下载后白屏或闪退的 IPA 需要重新下载。
+旧版用户请先手动安装一次本版本，之后即可使用软件内更新。
 ]]></description>
             <enclosure url="https://github.com/VincentGan260/Pastel-macOS15/releases/download/macOS15-20261102.1/Pastel-20261102.1-build-2026110205.dmg" length="81038315" type="application/octet-stream" sparkle:edSignature="wlT4w2DHDbNnOTocLIF2LbqwORkksYhpUWIB93hVN6cBEhshXuKjqUzVFOI3OBYWoeDWSrOdVQBv+8LtnsgnAQ=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: gZ5LvyvOTpy5f4nkY4QNT/BXm2tc4xuVZOqaI7Y0WADvCwiZCSzXmZxugXIIQBRykWMbrOywu5XCoAm3ntgFAA==
-length: 2052
+edSignature: FNylsGrtY6LOvgHOLEwfK0d+WW5qlSNwP0u6j91XOrT+iG5STXz5m6yFnOXTc0oHlG4dIP/7f1zuqiS5FRDyAg==
+length: 1564
 -->
