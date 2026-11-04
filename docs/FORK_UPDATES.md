@@ -52,3 +52,11 @@ this key. Users must manually install 20261102.1 once. That version and later
 can receive signed updates from this fork. Ad-hoc code signing and Gatekeeper
 approval remain separate from Sparkle's update signature; these packages are
 not Apple-notarized.
+
+## Release notes
+
+Write for users: use one to four short bullets about visible changes, plus only
+necessary installation or recovery instructions. Keep each version focused on
+its own changes. Omit implementation details, commit hashes, test reports,
+checksums, repeated acknowledgements, and prior-version changelog copies.
+Preserve existing language versions when editing historical notes.
