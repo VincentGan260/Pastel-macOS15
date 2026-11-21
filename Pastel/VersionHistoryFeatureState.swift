@@ -230,6 +230,11 @@ struct VersionSelectionRow: View {
     let isDownloading: Bool
     let downloadProgress: Double?
     let isPackaging: Bool
+    var downloadPhase: StoreOperationPhase? = nil
+    var isPaused: Bool = false
+    var onResume: (() -> Void)? = nil
+    var onPause: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
     let hasError: Bool
     let errorLog: String
     let downloadedURL: URL?
@@ -294,6 +299,8 @@ struct VersionSelectionRow: View {
             .frame(width: proxy.size.width, height: 46, alignment: .leading)
         }
         .frame(maxWidth: .infinity, minHeight: 46, maxHeight: 46, alignment: .leading)
+        .background(rowFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .simultaneousGesture(TapGesture().onEnded {
             onSelect()
         })
@@ -319,7 +326,7 @@ struct VersionSelectionRow: View {
 
     @ViewBuilder
     private var actionSlot: some View {
-        VStack(spacing: 0) {
+        Group {
             ZStack(alignment: .trailing) {
                 actionContent
                     .id(actionState)
@@ -340,7 +347,7 @@ struct VersionSelectionRow: View {
                 signIn: onSignIn
             )
         case .running:
-            DownloadProgressPill(progress: downloadProgress, isPackaging: isPackaging)
+            DownloadProgressPill(progress: downloadProgress, isPackaging: isPackaging, phase: downloadPhase, isPaused: isPaused, onResume: onResume, onPause: onPause, onCancel: onCancel)
         case .downloaded:
             FileActionsBar(isSelected: isSelected, onReveal: onReveal, onAirDrop: onAirDrop, onDelete: onDelete)
         case .ready:
@@ -381,6 +388,19 @@ struct VersionSelectionRow: View {
         if isDownloading { return .running }
         if downloadedURL != nil { return .downloaded }
         return .ready
+    }
+
+    private var rowFill: Color {
+        if isSelected {
+            return Color(nsColor: .selectedContentBackgroundColor)
+        }
+        if isHovered {
+            return colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.055)
+        }
+        if rowIndex.isMultiple(of: 2) {
+            return colorScheme == .dark ? Color.white.opacity(0.030) : Color.black.opacity(0.022)
+        }
+        return .clear
     }
 
     private var primaryTextStyle: Color {

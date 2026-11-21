@@ -27,7 +27,7 @@ xcodebuild \
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="$release_identity" \
     DEVELOPMENT_TEAM= \
-    CODE_SIGNING_ALLOWED=YES \
+    CODE_SIGNING_ALLOWED=NO \
     build
 
 app="${derived_data}/Build/Products/Release/Pastel.app"
@@ -37,8 +37,8 @@ store_helper="${app}/Contents/Resources/store-helper"
 sparkle="${app}/Contents/Frameworks/Sparkle.framework"
 
 test -d "$app"
-# Re-sign outside Xcode's build subprocess so the complete self-signed
-# certificate is embedded. Keep this order: leaf executables, framework, app.
+# Apply local ad-hoc signatures required by Apple silicon, with no developer
+# certificate. Keep this order: leaf executables, framework, app.
 codesign --force --sign "$release_identity" "$signer"
 codesign --force --sign "$release_identity" --options runtime \
     --entitlements "${project_root}/Scripts/NodeJIT.entitlements" "$node"

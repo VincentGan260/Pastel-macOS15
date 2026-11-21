@@ -1,3 +1,4 @@
+import {resumeWorkspace} from './resumable-download.js';
 import {promises as fsPromises} from 'fs';
 import os from 'os';
 import {createCipheriv, createDecipheriv, createHash, randomBytes} from 'crypto';
@@ -66,12 +67,12 @@ import {readCookieJar, restoreCookieJar} from './gsa.js';
 import {SignatureClient} from './Signature.js';
 import {download} from './downloader.js';
 import {t} from './i18n.js';
-import {runStoreHelper} from './store-helper.js';
+import {helperUser, runStoreHelper, storeAuthenticationError} from './store-helper.js';
 
 const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SESSION_TTL_MS = Number(process.env.IPA_SESSION_TTL_MS || DEFAULT_SESSION_TTL_MS);
-const SESSION_FLOW_VERSION = 'appstore-direct-v1';
-const ACCEPTED_SESSION_FLOW_VERSIONS = new Set([SESSION_FLOW_VERSION, 'gsa-srp-v10']);
+const SESSION_FLOW_VERSION = 'appstore-amd-v2';
+const ACCEPTED_SESSION_FLOW_VERSIONS = new Set([SESSION_FLOW_VERSION]);
 const ENCRYPTED_SESSION_FORMAT = 'pastel-session-aes-gcm-v1';
 
 function decodeSessionKey(value) {
@@ -186,6 +187,8 @@ export class Ipa {
                 pod: user.pod || '',
                 authHeaders: user.authHeaders,
                 cookieText: user.cookieText || '',
+                frameworkAccount: user.frameworkAccount ? {...user.frameworkAccount, password: undefined} : undefined,
+                frameworkCookieState: user.frameworkCookieState || [],
             }
         };
         await this.writeEncryptedSession(session);
@@ -236,7 +239,7 @@ export class Ipa {
         for (const delayMs of [0, 750]) {
             if (delayMs > 0) await new Promise(resolve => setTimeout(resolve, delayMs));
             try {
-                user = await Store.login(this.creds.APPLE_ID, this.creds.PASSWORD, this.creds.CODE, previousSession);
+                user = await Store.login(this.creds.APPLE_ID, this.creds.PASSWORD, this.creds.CODE, previousSession, this.sessionEncryptionKey?.toString('base64') || '');
                 lastError = null;
                 break;
             } catch (error) {
@@ -308,14 +311,18 @@ export class Ipa {
     }
 
     async helperRequest(command, extra = {}, {progress = false} = {}) {
+        if (!this.user) await this.login();
         let packagingEmitted = false;
         try {
-            return await runStoreHelper({
+            const result = await runStoreHelper({
                 command,
                 email: this.creds.APPLE_ID,
                 password: this.creds.PASSWORD,
                 code: this.creds.CODE || '',
                 guid: Store.guid,
+                sessionKey: this.sessionEncryptionKey?.toString('base64') || '',
+                account: this.user?.frameworkAccount,
+                cookieState: this.user?.frameworkCookieState || [],
                 ...extra,
             }, {
                 onProgress: progress ? percent => {
@@ -326,16 +333,16 @@ export class Ipa {
                     }
                 } : undefined,
             });
-        } catch (error) {
-            if (error.code === 'AUTH_CODE_REQUIRED') {
-                const challenge = new Error(t('login_2fa'));
-                challenge.code = 'NEEDS_2FA';
-                throw challenge;
+            if (result.account) {
+                this.applyUser(helperUser(result, this.creds.APPLE_ID), false);
+                await this.saveSession(this.user).catch(error => {
+                    console.log(t('save_session_failed', {message: error.message}));
+                });
             }
-            if (error.code === 'AUTH_FAILED') {
-                const auth = new Error(t('login_auth_or_2fa'));
-                auth.code = 'AUTH_REQUIRED';
-                throw auth;
+            return result;
+        } catch (error) {
+            if (error.code?.startsWith('AUTH_') || ['INVALID_CREDENTIALS', 'ACCOUNT_DISABLED', 'TOKEN_EXPIRED'].includes(error.code)) {
+                throw storeAuthenticationError(error);
             }
             throw error;
         }
@@ -437,16 +444,31 @@ export class Ipa {
         };
     }
 
-    async runDownload({dir = '.', APPID, appVerId} = {}) {
+    async runDownload({dir = '.', APPID, appVerId, prepareOnly = false} = {}) {
         this.dir = dir;
+        const workspace = await resumeWorkspace({
+            directory: dir, taskID: process.env.IPA_TASK_ID, email: this.creds.APPLE_ID,
+            appID: APPID, versionID: appVerId || '',
+            resolveVersion: async () => {
+                const result = await this._listVersionIdsOnce(APPID);
+                if (result.requiresAcquisition) {
+                    console.log('@@IPA:requires-acquisition');
+                    throw Object.assign(new Error('license is required'), {code: 'LICENSE_REQUIRED'});
+                }
+                return result.latestVersionId;
+            },
+        });
         const app = await this.helperApp(APPID);
         const platform = process.env.IPA_APP_PLATFORM || 'iphone';
         try {
+            const downloadRequest = {
+                app, platform, versionId: workspace.versionID || '', outputPath: workspace.directory,
+                preservePartial: Boolean(process.env.IPA_TASK_ID),
+                removeAppStoreUpdateMetadata: process.env.IPA_REMOVE_APP_STORE_UPDATE_METADATA === '1',
+            };
             let result;
             try {
-                result = await this.helperRequest('download', {
-                    app, platform, versionId: appVerId || '', outputPath: dir,
-                }, {progress: true});
+                result = await this.helperRequest(prepareOnly ? 'prepareNative' : 'download', downloadRequest, {progress: !prepareOnly});
             } catch (error) {
                 if (error.code !== 'LICENSE_REQUIRED') throw error;
                 if (app.price > 0) throw new Error(t('paid_not_purchased'));
@@ -455,12 +477,14 @@ export class Ipa {
                     throw error;
                 }
                 await this.helperRequest('purchase', {app, platform});
-                result = await this.helperRequest('download', {
-                    app, platform, versionId: appVerId || '', outputPath: dir,
-                }, {progress: true});
+                result = await this.helperRequest(prepareOnly ? 'prepareNative' : 'download', downloadRequest, {progress: !prepareOnly});
+            }
+            if (prepareOnly) {
+                return {ok: true, nativePlan: result.nativePlan, account: result.account};
             }
             this.out = result?.download?.DestinationPath || '';
             if (!this.out) throw new Error(t('appinfo_nodata'));
+            this.out = await workspace.finish(this.out);
             console.log(t('file_archived', {out: this.out}));
         } finally {
             Store.cleanup?.();
@@ -525,9 +549,9 @@ export class Ipa {
             const message = error.message || String(error);
             // 用稳定的 error.code 判断商店会话过期（cookie/令牌失效），不依赖文案语言；Apple 英文消息保留兜底。
             const code = error.code;
-            const sessionMayBeExpired = this.usedCachedSession
-                && (code === 'TOKEN_EXPIRED'
-                    || /401|403|Your password has changed\.?|password token is expired|token|session|authenticate|authorization|Sign In to the iTunes Store/i.test(message))
+            const sessionMayBeExpired = (code === 'TOKEN_EXPIRED'
+                || (this.usedCachedSession
+                    && /401|403|Your password has changed\.?|password token is expired|token|session|authenticate|authorization|Sign In to the iTunes Store/i.test(message)))
                 && !/License not found|已拥有|already|not found/i.test(message);
             if (!sessionMayBeExpired) throw error;
 

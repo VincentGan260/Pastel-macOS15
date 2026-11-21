@@ -24,7 +24,7 @@ version aggregation) is preserved exactly as in the original.
 The embedded StoreHelper is rebuilt from the upstream Go source with a macOS
 15.0 deployment target. This fork uses ad-hoc distribution signing. Automatic
 updates use the fork's own GitHub Releases and independent Sparkle signatures.
-Fork maintained/modified on 2026-09-14, 2026-11-03, and 2026-11-04 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
+Fork maintained/modified on 2026-09-14, 2026-11-03, 2026-11-04, and 2026-11-21 by VincentGan260 (https://github.com/VincentGan260/Pastel-macOS15).
 
 
 ----------------------------------------------------------------------------

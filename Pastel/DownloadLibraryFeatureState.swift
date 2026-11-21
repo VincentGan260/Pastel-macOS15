@@ -38,6 +38,8 @@ struct DownloadedAppSidebarRow: View {
     let icon: NSImage?
     let isSelected: Bool
     @Binding var remoteIconCache: [String: NSImage]
+    @State private var isHovered = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 10) {
@@ -66,6 +68,19 @@ struct DownloadedAppSidebarRow: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 50)
+        .background(rowFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .onHover { isHovered = $0 }
+    }
+
+    private var rowFill: Color {
+        if isSelected {
+            return Color(nsColor: .selectedContentBackgroundColor)
+        }
+        if isHovered {
+            return colorScheme == .dark ? Color.white.opacity(0.075) : Color.black.opacity(0.045)
+        }
+        return .clear
     }
 
     private var appIcon: some View {
@@ -174,12 +189,14 @@ struct DownloadedVersionHistoryRow: View {
     let rowIndex: Int
     let isSelected: Bool
     @Binding var remoteIconCache: [String: NSImage]
+    var downloadJob: DownloadManager.Job? = nil
+    var onPause: (() -> Void)? = nil
+    var onResume: (() -> Void)? = nil
     let onSelect: () -> Void
     let onReveal: () -> Void
     let onAirDrop: () -> Void
     let onDelete: () -> Void
     @State private var isHovered = false
-    @Namespace private var actionGlassNamespace
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -199,13 +216,13 @@ struct DownloadedVersionHistoryRow: View {
                 HoverCopyIDText(value: item.versionId, isVisible: isHovered, isSelected: isSelected)
                     .frame(width: columns.versionID, alignment: .leading)
 
-                Text(item.sizeText)
+                Text(downloadJob?.status.displayName ?? item.sizeText)
                     .font(.callout)
                     .foregroundStyle(secondaryTextStyle)
                     .lineLimit(1)
                     .frame(width: columns.size, alignment: .leading)
 
-                Text(region.name)
+                Text(item.pendingRegion ?? region.name)
                     .font(.callout)
                     .foregroundStyle(secondaryTextStyle)
                     .lineLimit(1)
@@ -228,16 +245,26 @@ struct DownloadedVersionHistoryRow: View {
 
                 Color.clear.frame(width: Self.actionGap, height: 1)
 
-                FileActionsBar(isSelected: isSelected, onReveal: onReveal, onAirDrop: onAirDrop, onDelete: onDelete)
-                    .frame(width: Self.actionColumnWidth, alignment: .trailing)
+                Group {
+                    if let job = downloadJob {
+                        DownloadProgressPill(
+                            progress: job.progress, isPackaging: job.isPackaging, phase: job.phase,
+                            isPaused: job.status != .running, onResume: onResume,
+                            onPause: onPause, onCancel: onDelete
+                        )
+                    } else {
+                        FileActionsBar(isSelected: isSelected, onReveal: onReveal, onAirDrop: onAirDrop, onDelete: onDelete)
+                    }
+                }
+                .frame(width: Self.actionColumnWidth, alignment: .trailing)
             }
             .padding(.horizontal, Self.rowHorizontalPadding)
             .frame(width: proxy.size.width, height: 46, alignment: .leading)
         }
         .frame(maxWidth: .infinity, minHeight: 46, maxHeight: 46, alignment: .leading)
-        .onTapGesture {
-            onSelect()
-        }
+        .background(rowFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .simultaneousGesture(TapGesture().onEnded { onSelect() })
         .onHover { isHovered = $0 }
     }
 
@@ -278,6 +305,19 @@ struct DownloadedVersionHistoryRow: View {
 
     private var rowIconCornerRadius: CGFloat {
         item.isVisionApp ? 12 : 6
+    }
+
+    private var rowFill: Color {
+        if isSelected {
+            return Color(nsColor: .selectedContentBackgroundColor)
+        }
+        if isHovered {
+            return colorScheme == .dark ? Color.white.opacity(0.075) : Color.black.opacity(0.045)
+        }
+        if rowIndex.isMultiple(of: 2) {
+            return colorScheme == .dark ? Color.white.opacity(0.030) : Color.black.opacity(0.022)
+        }
+        return .clear
     }
 
     private var primaryTextStyle: Color {

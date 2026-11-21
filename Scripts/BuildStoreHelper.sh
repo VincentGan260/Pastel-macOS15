@@ -2,13 +2,13 @@
 # Rebuild the upstream Store helper for the macOS 15 community fork.
 set -eu
 project_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-go_bin=${GO_BIN:-go}
+go_bin=${GO_BIN:-${PASTEL_GO:-go}}
 output=$(mktemp "${TMPDIR:-/tmp}/pastel-store-helper.XXXXXX")
 trap 'rm -f "$output"' EXIT HUP INT TERM
 cd "${project_root}/StoreHelper"
 GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 CGO_CFLAGS="-mmacosx-version-min=15.0" \
 CGO_LDFLAGS="-mmacosx-version-min=15.0" MACOSX_DEPLOYMENT_TARGET=15.0 \
-    "$go_bin" build -trimpath -ldflags='-linkmode=external -extldflags=-mmacosx-version-min=15.0' -o "$output" .
+    "$go_bin" build -mod=readonly -trimpath -ldflags='-s -w -linkmode=external -extldflags=-mmacosx-version-min=15.0' -o "$output" .
 xcrun vtool -show-build "$output"
 minimum=$(xcrun vtool -show-build "$output" | awk '$1 == "minos" {print $2}')
 if [ "$minimum" != "15.0" ]; then

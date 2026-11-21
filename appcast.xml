@@ -4,24 +4,21 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Pastel</title>
         <item>
-            <title>20261102.1</title>
-            <pubDate>Wed, 04 Nov 2026 00:00:56 +0800</pubDate>
-            <link>https://github.com/VincentGan260/Pastel-macOS15/releases/tag/macOS15-20261102.1</link>
-            <sparkle:version>2026110205</sparkle:version>
-            <sparkle:shortVersionString>20261102.1</sparkle:shortVersionString>
+            <title>20261119</title>
+            <pubDate>Sat, 21 Nov 2026 18:37:56 +0800</pubDate>
+            <link>https://github.com/VincentGan260/Pastel-macOS15/releases/tag/macOS15-20261119</link>
+            <sparkle:version>2026111901</sparkle:version>
+            <sparkle:shortVersionString>20261119</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="plain-text"><![CDATA[# 20261102.1
+            <description sparkle:format="plain-text"><![CDATA[# 20261119
 
-- 支持在软件内下载并安装更新。
-- 可在“设置 → 关于”管理自动更新。
-
-旧版用户请先手动安装一次本版本，之后即可使用软件内更新。
+- 支持并发下载与暂停恢复，修复部分账户登录和获取 App 失败的问题。
 ]]></description>
-            <enclosure url="https://github.com/VincentGan260/Pastel-macOS15/releases/download/macOS15-20261102.1/Pastel-20261102.1-build-2026110205.dmg" length="81038315" type="application/octet-stream" sparkle:edSignature="wlT4w2DHDbNnOTocLIF2LbqwORkksYhpUWIB93hVN6cBEhshXuKjqUzVFOI3OBYWoeDWSrOdVQBv+8LtnsgnAQ=="></enclosure>
+            <enclosure url="https://github.com/VincentGan260/Pastel-macOS15/releases/download/macOS15-20261119/Pastel-20261119-build-2026111901.dmg" length="73318995" type="application/octet-stream" sparkle:edSignature="7k1pENXzjmaKXTPU6can3chzymFxmQ3WclxzNOqDrD0PyG1KKJ+X2AWBW1kjakMe0+uVw7phM6T9Lfgr2Y3pCA=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: FNylsGrtY6LOvgHOLEwfK0d+WW5qlSNwP0u6j91XOrT+iG5STXz5m6yFnOXTc0oHlG4dIP/7f1zuqiS5FRDyAg==
-length: 1564
+edSignature: Cfa6znk9j2gSzCFVk2MluR2BZMKrXYXkpK/3Aedd0nhhl6rJDcJdzky5FqKikiD6uuXiuFmhSchlFwlu2pPyBg==
+length: 1463
 -->

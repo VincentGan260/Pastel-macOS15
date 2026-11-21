@@ -6,77 +6,47 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/majd/ipatool/v2/pkg/appstore"
-	apphttp "github.com/majd/ipatool/v2/pkg/http"
 	"github.com/majd/ipatool/v2/pkg/util/operatingsystem"
 	"github.com/schollz/progressbar/v3"
 )
 
 type request struct {
-	Command    string           `json:"command"`
-	Email      string           `json:"email,omitempty"`
-	Password   string           `json:"password,omitempty"`
-	Code       string           `json:"code,omitempty"`
-	GUID       string           `json:"guid"`
-	Account    appstore.Account `json:"account,omitempty"`
-	Cookies    []*http.Cookie   `json:"cookies,omitempty"`
-	App        appstore.App     `json:"app,omitempty"`
-	Platform   string           `json:"platform,omitempty"`
-	VersionID  string           `json:"versionId,omitempty"`
-	OutputPath string           `json:"outputPath,omitempty"`
+	NativePlan                   *appstore.NativeDownloadPlan `json:"nativePlan,omitempty"`
+	RawPath                      string                       `json:"rawPath,omitempty"`
+	ArtworkPath                  string                       `json:"artworkPath,omitempty"`
+	PreservePartial              bool                         `json:"preservePartial,omitempty"`
+	Command                      string                       `json:"command"`
+	Email                        string                       `json:"email,omitempty"`
+	Password                     string                       `json:"password,omitempty"`
+	Code                         string                       `json:"code,omitempty"`
+	GUID                         string                       `json:"guid"`
+	SessionKey                   string                       `json:"sessionKey,omitempty"`
+	Account                      appstore.Account             `json:"account,omitempty"`
+	CookieState                  []storedCookie               `json:"cookieState,omitempty"`
+	App                          appstore.App                 `json:"app,omitempty"`
+	Platform                     string                       `json:"platform,omitempty"`
+	VersionID                    string                       `json:"versionId,omitempty"`
+	OutputPath                   string                       `json:"outputPath,omitempty"`
+	RemoveAppStoreUpdateMetadata bool                         `json:"removeAppStoreUpdateMetadata,omitempty"`
 }
 
 type response struct {
-	OK       bool                         `json:"ok"`
-	Code     string                       `json:"code,omitempty"`
-	Message  string                       `json:"message,omitempty"`
-	Account  *appstore.Account            `json:"account,omitempty"`
-	Cookies  []*http.Cookie               `json:"cookies,omitempty"`
-	Versions *appstore.ListVersionsOutput `json:"versions,omitempty"`
-	Download *appstore.DownloadOutput     `json:"download,omitempty"`
+	NativePlan  *appstore.NativeDownloadPlan `json:"nativePlan,omitempty"`
+	OK          bool                         `json:"ok"`
+	Code        string                       `json:"code,omitempty"`
+	Message     string                       `json:"message,omitempty"`
+	Account     *appstore.Account            `json:"account,omitempty"`
+	CookieState []storedCookie               `json:"cookieState,omitempty"`
+	Versions    *appstore.ListVersionsOutput `json:"versions,omitempty"`
+	Download    *appstore.DownloadOutput     `json:"download,omitempty"`
 }
-
-type memoryKeychain struct {
-	mu     sync.Mutex
-	values map[string][]byte
-}
-
-func (k *memoryKeychain) Get(key string) ([]byte, error) {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-	value, ok := k.values[key]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	return append([]byte(nil), value...), nil
-}
-
-func (k *memoryKeychain) Set(key string, value []byte) error {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-	k.values[key] = append([]byte(nil), value...)
-	return nil
-}
-
-func (k *memoryKeychain) Remove(key string) error {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-	delete(k.values, key)
-	return nil
-}
-
-type memoryJar struct{ *cookiejar.Jar }
-
-func (memoryJar) Save() error { return nil }
-
-var _ apphttp.CookieJar = memoryJar{}
 
 type fixedMachine struct{ mac string }
 
@@ -92,41 +62,94 @@ func main() {
 		fail(input, "INVALID_INPUT", err)
 	}
 
+	if input.Command == "finalizeNative" {
+		// Stop a local packaging worker after its owning app exits.
+		if parent, err := strconv.Atoi(os.Getenv("IPA_PARENT_PID")); err == nil && parent > 1 {
+			go func() {
+				ticker := time.NewTicker(250 * time.Millisecond)
+				defer ticker.Stop()
+				for range ticker.C {
+					if os.Getppid() != parent {
+						os.Exit(1)
+					}
+				}
+			}()
+		}
+		if input.NativePlan == nil {
+			fail(input, "INVALID_INPUT", errors.New("missing native download plan"))
+		}
+		output, err := appstore.FinalizeNativeDownload(*input.NativePlan, input.Account, input.RawPath, input.ArtworkPath, input.OutputPath)
+		if err != nil {
+			fail(input, "FINALIZE_FAILED", err)
+		}
+		if err = normalizeAccountMetadata(output.DestinationPath, input.Email, input.RemoveAppStoreUpdateMetadata); err != nil {
+			fail(input, "FINALIZE_FAILED", err)
+		}
+		write(response{OK: true, Download: &output}, 0)
+	}
+
 	mac, err := macAddress(input.GUID)
 	if err != nil {
 		fail(input, "INVALID_DEVICE", err)
 	}
 
-	baseJar, err := cookiejar.New(nil)
+	emitPhase("waiting")
+	keys, err := newAuthenticationKeychain(authenticationStateDirectory(), mac, input.SessionKey)
 	if err != nil {
-		fail(input, "INTERNAL", err)
+		if errors.Is(err, errAuthenticationBusy) {
+			fail(input, "AUTH_STATE_BUSY", err)
+		}
+		fail(input, "AUTH_STATE_FAILED", err)
 	}
-	jar := memoryJar{baseJar}
-	cookieURLs := restoreCookies(jar, input.Cookies)
-	keys := &memoryKeychain{values: make(map[string][]byte)}
+	defer keys.Close()
+	jar, err := restoreAuthenticationCookies(keys, input.Email, input.CookieState)
+	if err != nil {
+		fail(input, "AUTH_STATE_FAILED", err)
+	}
+	abort := func(code string, cause error) {
+		if err := saveAuthenticationCookies(keys, input.Email, jar); err != nil {
+			fail(input, "AUTH_STATE_FAILED", err)
+		}
+		fail(input, code, cause)
+	}
+
 	if input.Account.PasswordToken != "" && input.Account.DirectoryServicesID != "" {
 		encoded, encodeErr := json.Marshal(input.Account)
 		if encodeErr != nil {
-			fail(input, "INVALID_SESSION", encodeErr)
+			abort("INVALID_SESSION", encodeErr)
 		}
 		keys.values["account"] = encoded
 	}
 
+	emitPhase("authenticating")
+	if !appleAssetsCached() {
+		emitPhase("preparing")
+	}
+	fileSystem := &transferOperatingSystem{OperatingSystem: operatingsystem.New(), preserveDownloadFiles: input.PreservePartial, beforeTransfer: func() error {
+		if err := saveAuthenticationCookies(keys, input.Email, jar); err != nil {
+			return err
+		}
+		if err := keys.releaseForTransfer(); err != nil {
+			return err
+		}
+		emitPhase("transferring")
+		return nil
+	}}
 	store := appstore.NewAppStore(appstore.Args{
 		Keychain:        keys,
 		CookieJar:       jar,
-		OperatingSystem: operatingsystem.New(),
+		OperatingSystem: fileSystem,
 		Machine:         fixedMachine{mac: mac},
 	})
 
 	account := input.Account
 	result := response{OK: true}
-	if input.Command != "login" {
+	if input.Command != "login" && !canReuseAccount(input, keys) {
 		login, loginErr := store.Login(appstore.LoginInput{
 			Email: input.Email, Password: input.Password, AuthCode: input.Code,
 		})
 		if loginErr != nil {
-			fail(input, errorCode(loginErr, true), loginErr)
+			abort(loginErrorCode(loginErr, input.Code), loginErr)
 		}
 		account = login.Account
 	}
@@ -136,34 +159,48 @@ func main() {
 			Email: input.Email, Password: input.Password, AuthCode: input.Code,
 		})
 		if loginErr != nil {
-			fail(input, errorCode(loginErr, true), loginErr)
+			abort(loginErrorCode(loginErr, input.Code), loginErr)
 		}
 		account = login.Account
 	case "listVersions":
+		emitPhase("authorizing")
 		platform, platformErr := appstore.ParsePlatform(input.Platform)
 		if platformErr != nil {
-			fail(input, "INVALID_PLATFORM", platformErr)
+			abort("INVALID_PLATFORM", platformErr)
 		}
 		versions, listErr := store.ListVersions(appstore.ListVersionsInput{
 			Context: context.Background(), Account: account, App: input.App, Platform: platform,
 		})
 		if listErr != nil {
-			fail(input, errorCode(listErr, false), listErr)
+			abort(errorCode(listErr), listErr)
 		}
 		result.Versions = &versions
 	case "purchase":
+		emitPhase("authorizing")
 		platform, platformErr := appstore.ParsePlatform(input.Platform)
 		if platformErr != nil {
-			fail(input, "INVALID_PLATFORM", platformErr)
+			abort("INVALID_PLATFORM", platformErr)
 		}
 		purchaseErr := store.Purchase(appstore.PurchaseInput{Account: account, App: input.App, Platform: platform})
 		if purchaseErr != nil && !errors.Is(purchaseErr, appstore.ErrLicenseAlreadyExists) {
-			fail(input, errorCode(purchaseErr, false), purchaseErr)
+			abort(errorCode(purchaseErr), purchaseErr)
 		}
+	case "prepareNative":
+		emitPhase("authorizing")
+		platform, err := appstore.ParsePlatform(input.Platform)
+		if err != nil {
+			abort("INVALID_PLATFORM", err)
+		}
+		plan, err := appstore.PrepareNativeDownload(store, appstore.DownloadInput{Context: context.Background(), Account: account, App: input.App, Platform: platform, ExternalVersionID: input.VersionID, OutputPath: input.OutputPath})
+		if err != nil {
+			abort(errorCode(err), err)
+		}
+		result.NativePlan = &plan
 	case "download":
+		emitPhase("authorizing")
 		platform, platformErr := appstore.ParsePlatform(input.Platform)
 		if platformErr != nil {
-			fail(input, "INVALID_PLATFORM", platformErr)
+			abort("INVALID_PLATFORM", platformErr)
 		}
 		bar := progressbar.NewOptions64(-1,
 			progressbar.OptionSetWriter(os.Stderr),
@@ -175,32 +212,70 @@ func main() {
 			Context: context.Background(), Account: account, App: input.App,
 			OutputPath: input.OutputPath, ExternalVersionID: input.VersionID,
 			Platform: platform, Progress: bar,
-		})
+		}, input.RemoveAppStoreUpdateMetadata)
 		if downloadErr != nil {
-			fail(input, errorCode(downloadErr, false), downloadErr)
+			abort(errorCode(downloadErr), downloadErr)
 		}
 		result.Download = &download
 	default:
-		fail(input, "INVALID_COMMAND", errors.New("unsupported Store helper command"))
+		abort("INVALID_COMMAND", errors.New("unsupported Store helper command"))
 	}
 
 	account.Password = ""
 	result.Account = &account
-	result.Cookies = collectCookies(jar, append(cookieURLs, storeURLs(account.Pod)...))
+	result.CookieState = jar.snapshot()
+	if err := saveAuthenticationCookies(keys, input.Email, jar); err != nil {
+		fail(input, "AUTH_STATE_FAILED", err)
+	}
 	write(result, 0)
 }
 
 // Download returns the Apple archive and the account-specific FairPlay data
 // separately. Match ipatool's CLI: inject that data before reporting success.
-func downloadAuthorizedPackage(store appstore.AppStore, input appstore.DownloadInput) (appstore.DownloadOutput, error) {
+func downloadAuthorizedPackage(store appstore.AppStore, input appstore.DownloadInput, removeUpdates bool) (appstore.DownloadOutput, error) {
+	originalOutputPath := input.OutputPath
+	if removeUpdates {
+		directory := originalOutputPath
+		if directory == "" {
+			directory = "."
+		}
+		if info, err := os.Stat(directory); err != nil || !info.IsDir() {
+			directory = filepath.Dir(directory)
+		}
+		staging := filepath.Join(directory, ".pastel-no-update")
+		err := os.MkdirAll(staging, 0700)
+		if err != nil {
+			return appstore.DownloadOutput{}, err
+		}
+		input.OutputPath = staging
+	}
 	output, err := store.Download(input)
 	if err != nil {
 		return appstore.DownloadOutput{}, err
 	}
+	emitPhase("packaging")
 	if err := store.ReplicateSinf(appstore.ReplicateSinfInput{
 		Sinfs: output.Sinfs, PackagePath: output.DestinationPath,
 	}); err != nil {
 		return appstore.DownloadOutput{}, fmt.Errorf("failed to finalize IPA authorization: %w", err)
+	}
+	if err := normalizeAccountMetadata(output.DestinationPath, input.Account.Email, removeUpdates); err != nil {
+		return appstore.DownloadOutput{}, fmt.Errorf("failed to finalize IPA account metadata: %w", err)
+	}
+	if removeUpdates {
+		target := originalOutputPath
+		if target == "" {
+			target = "."
+		}
+		if info, err := os.Stat(target); err == nil && info.IsDir() {
+			target = filepath.Join(target, filepath.Base(output.DestinationPath))
+		}
+		ext := filepath.Ext(target)
+		target = strings.TrimSuffix(target, ext) + "_no-update" + ext
+		if err := os.Rename(output.DestinationPath, target); err != nil {
+			return appstore.DownloadOutput{}, err
+		}
+		output.DestinationPath = target
 	}
 	return output, nil
 }
@@ -213,60 +288,13 @@ func macAddress(guid string) (string, error) {
 	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", raw[0], raw[1], raw[2], raw[3], raw[4], raw[5]), nil
 }
 
-func storeURLs(pod string) []*url.URL {
-	hosts := []string{"https://itunes.apple.com/", "https://buy.itunes.apple.com/"}
-	if pod != "" {
-		hosts = append(hosts, "https://p"+pod+"-buy.itunes.apple.com/")
-	}
-	result := make([]*url.URL, 0, len(hosts))
-	for _, value := range hosts {
-		parsed, _ := url.Parse(value)
-		result = append(result, parsed)
-	}
-	return result
+func canReuseAccount(input request, keys *authenticationKeychain) bool {
+	state, err := keys.Get(anisetteStateKey)
+	return err == nil && len(state) > 0 && input.Account.PasswordToken != "" && input.Account.DirectoryServicesID != "" &&
+		input.Account.StoreFront != "" && strings.EqualFold(input.Account.Email, input.Email)
 }
 
-func restoreCookies(jar memoryJar, cookies []*http.Cookie) []*url.URL {
-	result := make([]*url.URL, 0, len(cookies))
-	for _, cookie := range cookies {
-		if cookie == nil || cookie.Name == "" || cookie.Domain == "" {
-			continue
-		}
-		scheme := "https"
-		if !cookie.Secure {
-			scheme = "http"
-		}
-		path := cookie.Path
-		if path == "" {
-			path = "/"
-		}
-		target := &url.URL{Scheme: scheme, Host: strings.TrimPrefix(cookie.Domain, "."), Path: path}
-		jar.SetCookies(target, []*http.Cookie{cookie})
-		result = append(result, target)
-	}
-	return result
-}
-
-func collectCookies(jar memoryJar, targets []*url.URL) []*http.Cookie {
-	seen := make(map[string]bool)
-	result := make([]*http.Cookie, 0)
-	for _, target := range targets {
-		if target == nil {
-			continue
-		}
-		for _, cookie := range jar.Cookies(target) {
-			key := strings.Join([]string{cookie.Domain, cookie.Path, cookie.Name}, "|")
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			result = append(result, cookie)
-		}
-	}
-	return result
-}
-
-func errorCode(err error, login bool) string {
+func errorCode(err error) string {
 	switch {
 	case errors.Is(err, appstore.ErrAuthCodeRequired):
 		return "AUTH_CODE_REQUIRED"
@@ -276,19 +304,24 @@ func errorCode(err error, login bool) string {
 		return "LICENSE_REQUIRED"
 	case errors.Is(err, appstore.ErrTemporarilyUnavailable):
 		return "TEMPORARILY_UNAVAILABLE"
-	case login:
-		return "AUTH_FAILED"
 	default:
 		return "STORE_FAILED"
 	}
 }
 
 func fail(input request, code string, err error) {
+	write(response{OK: false, Code: code, Message: safeErrorMessage(input, err)}, 1)
+}
+
+func safeErrorMessage(input request, err error) string {
 	message := err.Error()
-	if input.Email != "" {
-		message = strings.ReplaceAll(message, input.Email, "[Apple Account]")
+	// Never serialize upstream Error.Metadata: it may contain tokens/cookies.
+	for _, secret := range []string{input.Password + input.Code, input.Password, input.Code, input.SessionKey, input.Account.PasswordToken, input.Email} {
+		if secret != "" {
+			message = strings.ReplaceAll(message, secret, "[redacted]")
+		}
 	}
-	write(response{OK: false, Code: code, Message: message}, 1)
+	return message
 }
 
 func write(value response, exitCode int) {

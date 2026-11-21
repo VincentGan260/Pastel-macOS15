@@ -9,7 +9,7 @@
   <p>在 Mac 上搜索 iOS、iPadOS 或 visionOS App，浏览版本记录，并从 Apple 获取所选版本。</p>
   <br>
   <p>
-    <img src="https://img.shields.io/badge/version-20261102.1-0A84FF?style=flat-square" alt="Version 20261102.1">
+    <img src="https://img.shields.io/badge/version-20261119-0A84FF?style=flat-square" alt="Version 20261119">
     <img src="https://img.shields.io/badge/macOS-15%2B-111111?style=flat-square&logo=apple" alt="macOS 15 or later">
     <img src="https://img.shields.io/badge/Apple%20Silicon-required-111111?style=flat-square&logo=apple" alt="Apple Silicon required">
     <img src="https://img.shields.io/badge/license-Apache--2.0-6B7280?style=flat-square" alt="Apache 2.0 License">
@@ -17,7 +17,7 @@
   <p>
     <a href="https://github.com/VincentGan260/Pastel-macOS15/releases/latest"><strong>下载 Pastel</strong></a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="release-notes/20261102/release-notes.md">查看新功能</a>
+    <a href="release-notes/20261119/release-notes.md">查看新功能</a>
   </p>
   <p><sub>需要 macOS 15 或更高版本，以及搭载 Apple 芯片的 Mac。</sub></p>
   <br>
@@ -82,17 +82,17 @@ Pastel 使用 SwiftUI 构建，本 fork 使用兼容 macOS 15 的原生控件，
   <img width="640" alt="Pastel Apple 账户设置" src="https://github.com/user-attachments/assets/b40db4c9-3e27-4bd4-9f1e-82ed0ecc29a0">
 </p>
 
-Apple 账户密码与会话数据使用 AES-GCM 加密保存，主密钥由 macOS Keychain 保护。Pastel 使用 macOS StoreServices 完成登录和下载，因此需要搭载 Apple 芯片的实体 Mac；虚拟机不受支持。
+Apple 账户密码与会话数据使用 AES-GCM 加密保存，主密钥由 macOS Keychain 保护。Pastel 使用 Apple App Store 认证与下载服务，并复用已加密保存的认证状态，减少重复登录与等待。
 
 <br>
 
-## Pastel 20261102.1
+## Pastel 20261119
 
-此更新修复下载的 IPA 安装后白屏闪退的问题，同时包含 Apple 账户登录与使用体验改进。受影响的 IPA 请使用新版重新下载并安装。
+此更新修复首次下载尚未获取的免费 App 时反复提示重新登录的问题，改进免费许可获取与令牌过期后的自动重试。
 
-[阅读完整更新日志](release-notes/20261102.1/release-notes.md)
+[阅读完整更新日志](release-notes/20261119/release-notes.md)
 
-本 fork 已同步上游 `82576f2`（20261102），保留 macOS 15 适配。自 20261102.1 起，软件内自动更新仅使用本仓库 GitHub Releases，并校验下游独立签名。旧版需先手动安装一次 20261102.1，此后可在“设置 → 关于”中检查更新及管理自动更新选项。上方截图来自上游，界面样式与本 fork 可能不同。
+本 fork 已同步上游 `3d0182f`（20261119），保留 macOS 15 适配。自 20261102.1 起，软件内自动更新仅使用本仓库 GitHub Releases，并校验下游独立签名。20261102 及更早版本需先手动安装一次新版，此后可在“设置 → 关于”中检查更新及管理自动更新选项。上方截图来自上游，界面样式与本 fork 可能不同。
 
 <br>
 

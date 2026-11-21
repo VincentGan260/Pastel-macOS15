@@ -42,6 +42,7 @@ chmod 755 "${resources}/node/bin/node"
 cp "${store_helper}" "${resources}/store-helper"
 chmod 755 "${resources}/store-helper"
 cp "${SRCROOT}/StoreHelper/THIRD_PARTY_LICENSES.txt" "${resources}/StoreHelper-LICENSES.txt"
+cp "${SRCROOT}/StoreHelper/ipatool/LICENSE" "${resources}/ipatool-LICENSE.txt"
 
 sap_arch="${NATIVE_ARCH_ACTUAL:-arm64}"
 xcrun --sdk macosx clang -fobjc-arc -fblocks -arch "${sap_arch}" \
